@@ -1,0 +1,242 @@
+---
+title: "CptS 575_Assignment 04"
+author: "Sajjad Uddin Mahmud | WSU ID: 011789534"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+# Setting the file location
+setwd("D:/Homeworks/Data_Science/Assignment 04")
+```
+
+# Solution of Problem 01 : 
+
+## Solution of 1(a)
+
+```{r, warning = FALSE, message=FALSE}
+
+# Loading the packages
+library(nycflights13)
+library(dplyr)
+
+# Reading the data set
+
+weather %>%
+  select(origin,year,month,day,hour,humid) %>%
+  filter(year==2013, month==11, day==1, hour>=12 & hour<=18) ->
+  Weather_Data
+
+flights %>%
+  select(dest, dep_time, tailnum, year, month, day, hour, origin) %>%
+  filter(dest == "TPA", year == 2013, month == 11, day == 1, dep_time >= 1200 
+         & dep_time<=1800) %>%
+  mutate(hour = round(dep_time/100)) %>%
+  left_join(Weather_Data, by = c("origin" = "origin", "year" = "year", 
+                                 "month" = "month", "day" = "day", "hour"="hour")) ->
+  Flight_Data_Tampa
+  
+Flight_Data_Tampa 
+
+
+```
+
+There are **6** flights happened during the given time frame.
+
+## Solution of 1(b)
+
+```{r, warning = FALSE, message=FALSE}
+Anti_Join_1 <- anti_join(flights, airports, by = c("origin" = "faa"))
+
+Anti_Join_1
+
+Anti_Join_2 <- anti_join(airports, flights, by = c("faa" = "origin"))
+
+Anti_Join_2
+
+```
+
+**Difference between Anti_Join_1 and Anti_Join_2**
+
+We know that anti_join() return all rows from X dataset without a match in Y dataset.
+
+In Anti_Join_1, we are looking into rows of flights dataset that are not in the airports dataset for "origin=faa". As in the flights dataset, there are only EWR, JFK and LGA airports, hence it returns zero rows.
+
+In Anti_Join_2, we are looking into rows of airports dataset that are not in the flights dataset for "faa=origin" condition. As a result, we can see 1455 rows. Because the total rows were 1458 and it excludes 3 (EWR, JFK and LGA) from that.  
+
+
+**Difference between semi_join and anti_join**
+
+With just the columns from X dataset kept, semi join(X,Y) returns all rows from X where there are matching values in Y. On the contrary, anti join(X,Y) only keeps the columns from X and returns all rows from X where there are no matching values in Y.  
+
+\newpage
+## Solution of 1(c)
+
+```{r, warning = FALSE, message=FALSE}
+
+flights %>%
+  select(origin, dest) ->
+  Flight_Routes
+
+airports %>%
+  select(faa,lat,lon) ->
+  Airport_Locations
+
+Flights_Data <- inner_join(Flight_Routes,Airport_Locations, by = c("dest" = "faa"))
+
+Flights_Data
+```
+
+There are **329,174** flights.  
+
+
+## Solution of 1(d)
+
+```{r, warning = FALSE, message=FALSE}
+
+flights %>%
+  group_by(carrier, dest) %>%
+  count(sort = TRUE) ->
+  Flights_Summary
+
+Flights_Summary
+
+```
+
+There are **314** unique combinations of carrier/dest present in the dataset.  
+
+
+## Solution of 1(e)
+
+```{r, warning = FALSE, message=FALSE}
+
+# Loading the packages
+library(maps)
+library(usmap)
+library(ggplot2)
+
+# Getting the data to map
+flights %>%
+  select(origin) %>%
+  left_join(airports, by = c("origin" = "faa")) %>%
+  group_by(origin) %>%
+  select(origin,lat,lon) %>%
+  summarise(Total_Flight_Number = n()) ->
+  Flight_Origin_Map_Data
+
+Flight_Origin_Map_Data
+
+Flight_Origin_Map_Data %>%
+  left_join(airports, c("origin" = "faa")) ->
+  Flight_Origin_Map_Data
+
+Flight_Origin_Map_Data %>%
+  ggplot(aes(lon,lat, label = origin))+
+  borders("state", xlim = c(-74.5,-73.5), ylim = c(40.8,41)) +
+  geom_point(aes(colour = Total_Flight_Number)) +
+  labs(x="Longitude", y="Latitude", title="Outgoing Flights")
+
+
+
+```
+
+
+\newpage
+
+# Solution of Problem 02
+
+For this problem, I have chosen US President Election Year 2016 and 2020 for the visualization.
+
+```{r, warning = FALSE, message=FALSE}
+
+# Loading the packages
+library(usmap)
+library(ggplot2)
+library(RColorBrewer)
+
+
+# Reading the data set
+US_President <- read.csv("us-presidents.csv")
+
+# Creating a visualization of the total number of voter in US President Election
+
+# Year 2016
+US_President %>%
+  group_by(year) %>% 
+  filter(year=="2016") ->
+  US_Map_Data
+
+Plot_US_Election1 <- plot_usmap(data=US_Map_Data,values="totalvotes",
+                                labels = TRUE, label_color="white")+
+  scale_fill_continuous(name="Total No. of Voter",low="slateblue4",
+                        high="skyblue",label=scales::comma)+
+  theme(legend.position = "right") + labs(caption="Figure 01: US Election 2016")
+
+Plot_US_Election1
+
+# Year 2020
+US_President %>%
+  group_by(year) %>% 
+  filter(year=="2020") ->
+  US_Map_Data
+
+Plot_US_Election2 <- plot_usmap(data=US_Map_Data,values="totalvotes",
+                                labels = TRUE, label_color="white")+
+  scale_fill_continuous(name="Total No. of Voter",low="mediumpurple4",
+                        high="mediumorchid1",label=scales::comma)+
+  theme(legend.position = "right") + labs(caption="Figure 02: US Election 2020")
+
+Plot_US_Election2
+
+```
+
+  
+\newpage
+
+# Solution of Problem 03: Word Cloud
+
+For this problem, I have chosen my "Statement of Purpose" as the input document.
+
+```{r, warning = FALSE, message=FALSE, tidy=TRUE}
+
+# Initialization
+library(wordcloud)
+library(RColorBrewer)
+library(tm)
+library(plotly)
+
+# Reading the word document
+Word_File_Text <- readLines("D:\\Homeworks\\Data_Science\\Assignment 04\\Statement_of_purpose_Sajjad.txt")
+
+Word_File_Text <- Corpus(VectorSource(Word_File_Text))
+
+# Tidying the document
+Word_File_Text %>%
+  tm_map(content_transformer(tolower)) %>% # Converting all words in lowercase
+  tm_map(removeNumbers) %>% # Removing numbers
+  tm_map(removeWords, stopwords("english")) %>% # Removing stop words
+  tm_map(removeWords, c("also", "become", "sajjad", "mahmud")) %>% # Removing some specific words
+  tm_map(removePunctuation) %>% # Removing punctuation
+  tm_map(stripWhitespace) -> # Collapsing multiple white space characters to a single blank
+  Word_File_Text 
+
+# Creating Title
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, y=0.5, 
+     "Sajjad's Statement of Purpose for WSU Application, written in August 2021")
+
+# Generating the wordcloud
+wordcloud(Word_File_Text, min.freq = 1, max.words = 200, random.order=FALSE, 
+          colors=brewer.pal(12,"Set1"))
+
+```
+
+
