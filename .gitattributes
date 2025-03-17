@@ -1,5 +1,6 @@
 *.R linguist-language=R
 *.Rmd linguist-language=R
+
 *.csv linguist-vendored
 *.xlsx linguist-vendored
 *.png linguist-vendored
