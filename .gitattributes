@@ -1,2 +1,8 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+*.R linguist-language=R
+*.Rmd linguist-language=R
+*.csv linguist-vendored
+*.xlsx linguist-vendored
+*.png linguist-vendored
+*.pdf linguist-vendored
+*.txt linguist-vendored
+
